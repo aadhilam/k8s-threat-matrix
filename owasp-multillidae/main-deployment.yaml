@@ -1,0 +1,156 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: database
+spec:
+  selector:
+    matchLabels:
+      app: database
+  template:
+    metadata:
+      labels:
+        app: database
+    spec:
+      containers:
+      - name: database
+        image: docker.io/webpwnized/mutillidae:database
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: database
+spec:
+  selector:
+    app: database
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: database-admin
+spec:
+  selector:
+    matchLabels:
+      app: database-admin
+  template:
+    metadata:
+      labels:
+        app: database-admin
+    spec:
+      containers:
+      - name: database-admin
+        image: docker.io/webpwnized/mutillidae:database_admin
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: database-admin
+spec:
+  selector:
+    app: database-admin
+  ports:
+    - protocol: TCP
+      port: 81
+      targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: www
+spec:
+  selector:
+    matchLabels:
+      app: www
+  template:
+    metadata:
+      labels:
+        app: www
+    spec:
+      containers:
+      - name: www
+        image: docker.io/webpwnized/mutillidae:www
+        ports:
+        - containerPort: 80
+        - containerPort: 443
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: www
+spec:
+  selector:
+    app: www
+  ports:
+    - protocol: TCP
+      name: http
+      port: 80
+      targetPort: 80
+    - protocol: TCP
+      name: https
+      port: 443
+      targetPort: 443
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: directory
+spec:
+  selector:
+    matchLabels:
+      app: directory
+  template:
+    metadata:
+      labels:
+        app: directory
+    spec:
+      containers:
+      - name: directory
+        image: docker.io/webpwnized/mutillidae:ldap
+        ports:
+        - containerPort: 389
+        volumeMounts:
+        - mountPath: /var/lib/ldap
+          name: ldap-data
+        - mountPath: /etc/ldap/slapd.d
+          name: ldap-config
+      volumes:
+      - name: ldap-data
+        persistentVolumeClaim:
+          claimName: ldap-data
+      - name: ldap-config
+        persistentVolumeClaim:
+          claimName: ldap-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: directory
+spec:
+  selector:
+    app: directory
+  ports:
+    - protocol: TCP
+      port: 389
+      targetPort: 389
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: directory-admin
+spec:
+  selector:
+    matchLabels:
+      app: directory-admin
+  template:
+    metadata:
+      labels:
+        app: directory-admin
+    spec:
+      containers:
+      - name: directory-admin
+        image: docker.io/webpwnized/mutillidae:ldap_admin
